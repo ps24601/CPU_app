@@ -75,7 +75,7 @@ def target_para_classification(haystack_doc:List[Document],
     logging.info("Working on SDG Classification")
     if not classifier_model:
         if check_streamlit():
-            classifier_model = st.session_state['sdg_classifier']
+            classifier_model = st.session_state['target_extraction']
         else:
             logging.warning("No streamlit envinornment found, Pass the classifier")
             return
@@ -98,8 +98,8 @@ def target_para_classification(haystack_doc:List[Document],
     x = x.rename_axis('Target Label').reset_index()
     x["Target Label"] = pd.to_numeric(x["Target Label"])
     x = x.sort_values(by=['count'], ascending=False)
-    x['TARGET_name'] = x['SDG'].apply(lambda x: _lab_dict[x])
-    x['TARGET_Num'] = x['SDG'].apply(lambda x: "TARGET LABEL "+str(x))
+    x['TARGET_name'] = x['Target Label'].apply(lambda x: _lab_dict[x])
+    x['TARGET_Num'] = x['Target Label'].apply(lambda x: "TARGET LABEL "+str(x))
 
     df['TARGET LABEL'] = pd.to_numeric(df['TARGET LABEL'])
     df = df.sort_values('TARGET LABEL')
