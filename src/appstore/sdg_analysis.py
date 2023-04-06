@@ -9,7 +9,7 @@ import pandas as pd
 import streamlit as st
 from st_aggrid import AgGrid
 from st_aggrid.shared import ColumnsAutoSizeMode
-from utils.sdg_classifier import sdg_classification
+# from utils.sdg_classifier import sdg_classification
 from utils.sdg_classifier import runSDGPreprocessingPipeline, load_sdgClassifier
 from utils.keyword_extraction import textrank
 import logging
@@ -28,12 +28,81 @@ split_respect_sentence_boundary = bool(int(config.get('sdg','RESPECT_SENTENCE_BO
 threshold = float(config.get('sdg','THRESHOLD'))
 top_n = int(config.get('sdg','TOP_KEY'))
 
+## Labels dictionary ###
+_lab_dict = {
+            'ECONOMY-WIDE':'ECONOMY-WIDE',
+            'NEGATIVE':'NO TARGET INFO',
+            }
+
+# @st.cache(allow_output_mutation=True)
+def target_para_classification(haystack_doc:List[Document],
+                        threshold:float = 0.8, 
+                        classifier_model:TransformersDocumentClassifier= None
+                        )->Tuple[DataFrame,Series]:
+    """
+    Text-Classification on the list of texts provided. Classifier provides the 
+    most appropriate label for each text. these labels are in terms of if text 
+    belongs to which particular Sustainable Devleopment Goal (SDG).
+
+    Params
+    ---------
+    haystack_doc: List of haystack Documents. The output of Preprocessing Pipeline 
+    contains the list of paragraphs in different format,here the list of 
+    Haystack Documents is used.
+    threshold: threshold value for the model to keep the results from classifier
+    classifiermodel: you can pass the classifier model directly,which takes priority
+    however if not then looks for model in streamlit session.
+    In case of streamlit avoid passing the model directly.
+
+
+    Returns
+    ----------
+    df: Dataframe with two columns['SDG:int', 'text']
+    x: Series object with the unique SDG covered in the document uploaded and 
+    the number of times it is covered/discussed/count_of_paragraphs. 
+
+    """
+    logging.info("Working on SDG Classification")
+    if not classifier_model:
+        if check_streamlit():
+            classifier_model = st.session_state['sdg_classifier']
+        else:
+            logging.warning("No streamlit envinornment found, Pass the classifier")
+            return
+    
+    results = classifier_model.predict(haystack_doc)
+
+
+    labels_= [(l.meta['classification']['label'],
+            l.meta['classification']['score'],l.content,) for l in results]
+
+    df = DataFrame(labels_, columns=["Target Label","Relevancy","text"])
+    
+    df = df.sort_values(by="Relevancy", ascending=False).reset_index(drop=True)  
+    df.index += 1
+    df =df[df['Relevancy']>threshold]
+
+    # creating the dataframe for value counts of SDG, along with 'title' of SDGs
+    x = df['Target Label'].value_counts()
+    x = x.rename('count')
+    x = x.rename_axis('Target Label').reset_index()
+    x["Target Label"] = pd.to_numeric(x["Target Label"])
+    x = x.sort_values(by=['count'], ascending=False)
+    x['TARGET_name'] = x['SDG'].apply(lambda x: _lab_dict[x])
+    x['TARGET_Num'] = x['SDG'].apply(lambda x: "TARGET LABEL "+str(x))
+
+    df['TARGET LABEL'] = pd.to_numeric(df['TARGET LABEL'])
+    df = df.sort_values('TARGET LABEL')
+    
+    return df, x
+
+
 
 def app():
 
     #### APP INFO #####
     with st.container():
-        st.markdown("<h1 style='text-align: center; color: black;'> SDG Classification and Keyphrase Extraction </h1>", unsafe_allow_html=True)
+        st.markdown("<h1 style='text-align: center; color: black;'> Targets Extraction </h1>", unsafe_allow_html=True)
         st.write(' ')
         st.write(' ')
 
@@ -41,11 +110,12 @@ def app():
 
         st.write(
             """     
-            The *SDG Analysis* app is an easy-to-use interface built \
-                in Streamlit for analyzing policy documents with respect to SDG \
-                 Classification for the paragraphs/texts in the document and \
-                extracting the keyphrase per SDG label - developed by GIZ Data \
-                 and the Sustainable Development Solution Network. \n
+            The **Target Extraction** app is an easy-to-use interface built \
+                in Streamlit for analyzing policy documents for \
+                 Classification of the paragraphs/texts in the document *If it \
+                contains any Targets related information* and then further classify those \
+                targets - developed by GIZ Data Service Center, GFA, IKI Tracs, \
+                 SV Klima and SPA. \n
             """)
         st.write("""**Document Processing:** The Uploaded/Selected document is \
             automatically cleaned and split into paragraphs with a maximum \
@@ -106,13 +176,13 @@ def app():
     
     ### Main app code ###
     with st.container():
-        if st.button("RUN SDG Analysis"):
+        if st.button("RUN Target Related Paragraph Extractions"):
                    
             if 'filepath' in st.session_state:
                 file_name = st.session_state['filename']
                 file_path = st.session_state['filepath']
                 classifier = load_sdgClassifier(classifier_name=model_name)
-                st.session_state['sdg_classifier'] = classifier
+                st.session_state['target_extraction'] = classifier
                 all_documents = runSDGPreprocessingPipeline(file_name= file_name,
                                         file_path= file_path, split_by= split_by,
                                         split_length= split_length,
@@ -124,9 +194,9 @@ def app():
                 else:
                     warning_msg = ""
 
-                with st.spinner("Running SDG Classification{}".format(warning_msg)):
+                with st.spinner("Running Target Related Paragraph Extractions{}".format(warning_msg)):
 
-                    df, x = sdg_classification(haystack_doc=all_documents['documents'],
+                    df, x = target_para_classification(haystack_doc=all_documents['documents'],
                                                 threshold= threshold)
                     df = df.drop(['Relevancy'], axis = 1)
                     sdg_labels = x.SDG.unique()
@@ -158,7 +228,7 @@ def app():
                     with c5:
                         st.pyplot(fig)
                     with c6:
-                        labeldf = x['SDG_name'].values.tolist()
+                        labeldf = x['TARGET_name'].values.tolist()
                         labeldf = "<br>".join(labeldf)
                         st.markdown(labeldf, unsafe_allow_html=True)
                     st.write("")

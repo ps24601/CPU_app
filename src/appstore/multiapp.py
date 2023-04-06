@@ -51,7 +51,7 @@ class MultiApp:
 
     def run(self,document_store):
         st.sidebar.write(format_func=lambda app: app['title'])
-        imagefile = get_data('sdsn.png')
+        imagefile = get_data('dsc_giz.jpg')
         image = Image.open(imagefile)
         st.sidebar.image(image, width =200)
        
