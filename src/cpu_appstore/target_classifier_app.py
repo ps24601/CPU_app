@@ -121,7 +121,7 @@ def app():
                 file_name = st.session_state['filename']
                 file_path = st.session_state['filepath']
                 classifier = load_Classifier(classifier_name=params['model_name'])
-                st.session_state[classifier_identifier] = classifier
+                st.session_state['{}_classifier'.format(classifier_identifier)] = classifier
                 all_documents = runPreprocessingPipeline(file_name= file_name,
                                         file_path= file_path, split_by= params['split_by'],
                                         split_length= params['split_length'],
@@ -136,9 +136,9 @@ def app():
                 with st.spinner("Running Target Related Paragraph Extractions{}".format(warning_msg)):
 
                     df, x = para_classification(haystack_doc=all_documents['documents'],
-                                                _lab_dict = _lab_dict,
+                                                _lab_dict = _lab_dict,param_val=classifier_identifier,
                                                 threshold= params['threshold'], 
-                                                classifier_model=st.session_state[classifier_identifier])
+                                                )
                     df = df.drop(['Relevancy'], axis = 1)
 
                     target_labels = x['Target Label'].unique()

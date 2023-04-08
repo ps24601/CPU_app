@@ -18,14 +18,14 @@ except ImportError:
 def get_classifier_params(model_name):
     config = getconfig('paramconfig.cfg')
     params = {}
-    params['model_name'] = config.get('sdg','MODEL')
-    params['split_by'] = config.get('sdg','SPLIT_BY')
-    params['split_length'] = int(config.get('sdg','SPLIT_LENGTH'))
-    params['split_overlap'] = int(config.get('sdg','SPLIT_OVERLAP'))
-    params['remove_punc'] = bool(int(config.get('sdg','REMOVE_PUNC')))
-    params['split_respect_sentence_boundary'] = bool(int(config.get('sdg','RESPECT_SENTENCE_BOUNDARY')))
-    params['threshold'] = float(config.get('sdg','THRESHOLD'))
-    params['top_n'] = int(config.get('sdg','TOP_KEY'))
+    params['model_name'] = config.get(model_name,'MODEL')
+    params['split_by'] = config.get(model_name,'SPLIT_BY')
+    params['split_length'] = int(config.get(model_name,'SPLIT_LENGTH'))
+    params['split_overlap'] = int(config.get(model_name,'SPLIT_OVERLAP'))
+    params['remove_punc'] = bool(int(config.get(model_name,'REMOVE_PUNC')))
+    params['split_respect_sentence_boundary'] = bool(int(config.get(model_name,'RESPECT_SENTENCE_BOUNDARY')))
+    params['threshold'] = float(config.get(model_name,'THRESHOLD'))
+    params['top_n'] = int(config.get(model_name,'TOP_KEY'))
 
     return params
 
@@ -57,7 +57,7 @@ def para_classification(haystack_doc:List[Document],_lab_dict:Dict,
     the number of times it is covered/discussed/count_of_paragraphs. 
 
     """
-    logging.info("Working on SDG Classification")
+    logging.info("Working on Economy Target Classification")
     if not classifier_model:
         if check_streamlit():
             classifier_model = st.session_state['{}_classifier'.format(param_val)]
