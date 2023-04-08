@@ -6,6 +6,7 @@ import logging
 import pandas as pd
 from pandas import DataFrame, Series
 from utils.checkconfig import getconfig
+import utils
 from utils.streamlitcheck import check_streamlit
 from utils.preprocessing import processingpipeline
 

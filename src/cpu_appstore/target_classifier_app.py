@@ -120,6 +120,7 @@ def app():
             if 'filepath' in st.session_state:
                 file_name = st.session_state['filename']
                 file_path = st.session_state['filepath']
+                st.write(file_name,file_path)
                 classifier = load_Classifier(classifier_name=params['model_name'])
                 st.session_state['{}_classifier'.format(classifier_identifier)] = classifier
                 all_documents = runPreprocessingPipeline(file_name= file_name,
@@ -127,7 +128,7 @@ def app():
                                         split_length= params['split_length'],
                 split_respect_sentence_boundary= params['split_respect_sentence_boundary'],
                 split_overlap= params['split_overlap'], remove_punc= params['remove_punc'])
-
+                st.write(all_documents['documents'])
                 if len(all_documents['documents']) > 100:
                     warning_msg = ": This might take sometime, please sit back and relax."
                 else:
